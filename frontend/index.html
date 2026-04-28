@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Digit Recognizer</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+    }
+    canvas {
+      border: 2px solid white;
+      background: black;
+      margin-top: 20px;
+    }
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      border: none;
+      background: #38bdf8;
+      color: black;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🧠 Draw a Digit</h1>
+<canvas id="canvas" width="200" height="200"></canvas>
+<br>
+<button onclick="predict()">Predict</button>
+<button onclick="clearCanvas()">Clear</button>
+
+<h2 id="result"></h2>
+
+<script>
+let canvas = document.getElementById("canvas");
+let ctx = canvas.getContext("2d");
+
+// Fill black background (IMPORTANT)
+ctx.fillStyle = "black";
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+let drawing = false;
+
+canvas.addEventListener("mousedown", (e) => {
+  drawing = true;
+  ctx.beginPath();
+  ctx.moveTo(e.offsetX, e.offsetY);
+});
+
+canvas.addEventListener("mouseup", () => {
+  drawing = false;
+});
+
+canvas.addEventListener("mousemove", (e) => {
+  if (!drawing) return;
+
+  ctx.lineWidth = 15;
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "white";
+
+  ctx.lineTo(e.offsetX, e.offsetY);
+  ctx.stroke();
+});
+
+
+function clearCanvas() {
+  ctx.fillStyle = "black";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+
+function predict() {
+  canvas.toBlob(blob => {
+    let formData = new FormData();
+    formData.append("file", blob, "digit.png");
+
+    fetch("http://127.0.0.1:5000/predict", {
+      method: "POST",
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("result").innerText =
+        "Prediction: " + data.digit + " (" + data.confidence + "%)";
+    })
+    .catch(err => console.error(err));
+  });
+}
+</script>
+
+</body>
+</html>
