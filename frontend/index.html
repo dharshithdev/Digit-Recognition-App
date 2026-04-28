@@ -1,96 +1,183 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Digit Recognizer</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Nabula AI - Digit Recognition</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+
     body {
-      text-align: center;
-      font-family: Arial;
-      background: #0f172a;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
       color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
     }
+
+    .container {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(15px);
+      border-radius: 20px;
+      padding: 30px;
+      width: 400px;
+      text-align: center;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      font-weight: 600;
+      color: #38bdf8;
+    }
+
+    p {
+      font-size: 14px;
+      color: #94a3b8;
+      margin-bottom: 20px;
+    }
+
     canvas {
-      border: 2px solid white;
       background: black;
-      margin-top: 20px;
+      border-radius: 10px;
+      cursor: crosshair;
+      margin-bottom: 20px;
     }
+
+    .buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
     button {
-      margin: 10px;
-      padding: 10px 20px;
+      flex: 1;
+      padding: 10px;
       border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .predict {
       background: #38bdf8;
       color: black;
-      font-weight: bold;
-      cursor: pointer;
+    }
+
+    .clear {
+      background: #ef4444;
+      color: white;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      opacity: 0.9;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.05);
+    }
+
+    .digit {
+      font-size: 36px;
+      font-weight: 600;
+      color: #38bdf8;
+    }
+
+    .confidence {
+      font-size: 14px;
+      color: #94a3b8;
     }
   </style>
 </head>
 <body>
 
-<h1>🧠 Draw a Digit</h1>
-<canvas id="canvas" width="200" height="200"></canvas>
-<br>
-<button onclick="predict()">Predict</button>
-<button onclick="clearCanvas()">Clear</button>
+  <div class="container">
+    <h1>Digit Recognition AI</h1>
+    <p>Draw a digit (0–9) and let AI predict it</p>
 
-<h2 id="result"></h2>
+    <canvas id="canvas" width="250" height="250"></canvas>
 
-<script>
-let canvas = document.getElementById("canvas");
-let ctx = canvas.getContext("2d");
+    <div class="buttons">
+      <button class="predict" onclick="predict()">Predict</button>
+      <button class="clear" onclick="clearCanvas()">Clear</button>
+    </div>
 
-// Fill black background (IMPORTANT)
-ctx.fillStyle = "black";
-ctx.fillRect(0, 0, canvas.width, canvas.height);
+    <div class="result" id="resultBox">
+      <div class="digit">-</div>
+      <div class="confidence">Confidence: -</div>
+    </div>
+  </div>
 
-let drawing = false;
+  <script>
+    let canvas = document.getElementById("canvas");
+    let ctx = canvas.getContext("2d");
 
-canvas.addEventListener("mousedown", (e) => {
-  drawing = true;
-  ctx.beginPath();
-  ctx.moveTo(e.offsetX, e.offsetY);
-});
+    // Fill black background
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-canvas.addEventListener("mouseup", () => {
-  drawing = false;
-});
+    let drawing = false;
 
-canvas.addEventListener("mousemove", (e) => {
-  if (!drawing) return;
+    canvas.addEventListener("mousedown", (e) => {
+      drawing = true;
+      ctx.beginPath();
+      ctx.moveTo(e.offsetX, e.offsetY);
+    });
 
-  ctx.lineWidth = 15;
-  ctx.lineCap = "round";
-  ctx.strokeStyle = "white";
+    canvas.addEventListener("mouseup", () => drawing = false);
 
-  ctx.lineTo(e.offsetX, e.offsetY);
-  ctx.stroke();
-});
+    canvas.addEventListener("mousemove", (e) => {
+      if (!drawing) return;
 
+      ctx.lineWidth = 15;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "white";
 
-function clearCanvas() {
-  ctx.fillStyle = "black";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
+      ctx.lineTo(e.offsetX, e.offsetY);
+      ctx.stroke();
+    });
 
+    function clearCanvas() {
+      ctx.fillStyle = "black";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-function predict() {
-  canvas.toBlob(blob => {
-    let formData = new FormData();
-    formData.append("file", blob, "digit.png");
+      document.querySelector(".digit").innerText = "-";
+      document.querySelector(".confidence").innerText = "Confidence: -";
+    }
 
-    fetch("http://127.0.0.1:5000/predict", {
-      method: "POST",
-      body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-      document.getElementById("result").innerText =
-        "Prediction: " + data.digit + " (" + data.confidence + "%)";
-    })
-    .catch(err => console.error(err));
-  });
-}
-</script>
+    function predict() {
+      canvas.toBlob(blob => {
+        let formData = new FormData();
+        formData.append("file", blob, "digit.png");
+
+        fetch("http://127.0.0.1:5000/predict", {
+          method: "POST",
+          body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+          document.querySelector(".digit").innerText = data.digit;
+          document.querySelector(".confidence").innerText =
+            "Confidence: " + data.confidence + "%";
+        })
+        .catch(err => console.error(err));
+      });
+    }
+  </script>
 
 </body>
 </html>
